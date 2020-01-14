@@ -11,17 +11,61 @@ Frontend for HELL
 
 HOW TO USE
 - FIXME: info needed
+
+CONTRIBUTING
+- Do not add any function in "hell.sh" file! This is to avoid conflicts
 '
+
+# Customization
+## FIXME: Unset required
+PROJECT="HELL"
+MAINTAINER_EMAIL="HELL@rixotstudio.cz"
 
 # Capture arguments
 while [ $# -ge 1 ]; do case "$1" in
 	--run)
 		# Source backend
-		find -path "$(pwd)/backend" -name '*.sh' -name '*.bash' -exec "sh -c \"{}\" \;"
+		## Make sure that used variables are zero
+		[ -n "$HELL_sourceFile" ] && { printf 'ERROR: %s\n' "Variable 'HELL_sourceFile' is not zero which is unexpected, unseting.." ; unset HELL_sourceFile ;}
+
+		## Source and sanity-check
+		for HELL_sourceFile in backend/*; do
+			if [ ! -x "$HELL_sourceFile" ] && [ -f "$HELL_sourceFile" ]; then
+				[ -n "$DEBUG" ] && printf "DEBUG: Sourcing '%s'\\n" "$HELL_sourceFile"
+				. "$HELL_sourceFile"
+			elif [ -x "$HELL_sourceFile" ] && [ -f "$HELL_sourceFile" ]; then
+				# Check for unwanted executables
+				## This outputs 'FATAL: File 'backend/*.ssh' is not executable, unable to source' which is unexpected
+				printf 'BUG(DEV): %s\n' "File '$HELL_sourceFile' is executable which is unwanted! -- backend files are used for sourcing and are **NEVER** meant for runtime invokation -> remove the executable permission i.e 'chmod -x path/to/file' and invoke the script again"
+				printf 'NOTICE: %s\n' "- If you you are not developer of $PROJECT, then please inform us about this issue on <$MAINTAINER_EMAIL> after you checked that you are using latest version"
+				exit 1
+			elif [ ! -f "$HELL_sourceFile" ]; then
+				# Check for symlinks and directories
+				printf 'FATAL: %s\n' "File '$HELL_sourceFile' is not file which is unexpected"
+				exit 1
+			elif [ -z "$HELL_sourceFile" ]; then
+				# Check for blank directory
+				printf 'FATAL: %s\n' "Directory 'backend/' does not contain any files for sourcing which is unexpected" 
+				exit 1
+			else
+				printf 'FATAL: %s\n' "Unexpected happend while sourcing backend - HINT: HELL_sourceFile = '$HELL_sourceFile'"
+				exit 255
+			fi
+		done
+
+		## Alternative: `for file in backends/*.sh; do [ -f "$file" -a -x "$file" -a ! -h "$file" ] || { printf 'Error processing backends: %s\n' "$file" >&2; exit 1; }; . "$file"; done` - Kept for reference
+
+		die 1 "wow"
+
+		echo ping
+		exit 255
+
+		## Process unset 
+		unset HELL_sourceFile
 
 		# Run HELL
 		# shellcheck disable=SC2044 # HOTFIX!
-		for file in "$(find . -not \( \
+		for file in $(find . -not \( \
 			-path './.git' -prune -o \
 			-path './vendor' -prune -o \
 			-name 'LICENSE' -prune -o \
@@ -31,7 +75,7 @@ while [ $# -ge 1 ]; do case "$1" in
 			-path './build' -prune -o \
 			-path './target' -prune -o \
 			-name 'lock' -prune \
-		\) -type f)"; do
+		\) -type f); do
 
 			# Identify file
 			## Check for extension
@@ -98,24 +142,24 @@ while [ $# -ge 1 ]; do case "$1" in
 				gpg)
 					fixme "Checking for gpg file is stub, skipping.." ; true
 
-					created="$(cat "$file" | gpg --list-packets | grep -o "sig created[^)]\{1,\})" -m 1)"
-					created="${created##sig created }"
-					created="${created%)}"
+					# created="$(cat "$file" | gpg --list-packets | grep -o "sig created[^)]\{1,\})" -m 1)"
+					# created="${created##sig created }"
+					# created="${created%)}"
 
-					year="${created%%-??-??}"
-					month="${created##????-}"
-					month="${created%%-??}"
+					# year="${created%%-??-??}"
+					# month="${created##????-}"
+					# month="${created%%-??}"
 
-					day="${created##????-??-}"
+					# day="${created##????-??-}"
 
-					expires="$(cat "$file" | gpg --list-packets | grep -o "expires after[^)]\{1,\})")"
-					expires="${expires##expires after }"
-					expires="${expires%%)}"
+					# expires="$(cat "$file" | gpg --list-packets | grep -o "expires after[^)]\{1,\})")"
+					# expires="${expires##expires after }"
+					# expires="${expires%%)}"
 
-					expires="$(cat "$file" | gpg --list-packets | grep -o "expires after[^)]\{1,\})")" ; expires="${expires##expires after }" ; expires="${expires%%)}"
+					# expires="$(cat "$file" | gpg --list-packets | grep -o "expires after[^)]\{1,\})")" ; expires="${expires##expires after }" ; expires="${expires%%)}"
 
-					expires_year="$(print '%s\n' "$expires" | grep -o "[^y]\{1,\}y")"
-					expires_year="${expires_year%%y}"
+					# expires_year="$(print '%s\n' "$expires" | grep -o "[^y]\{1,\}y")"
+					# expires_year="${expires_year%%y}"
 				;;
 				makefile)
 					fixme "Check if checkmake is installed"
