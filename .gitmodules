@@ -1,0 +1,4 @@
+[submodule "kreypi"]
+	path = kreypi
+	url = https://github.com/kreypi/kreypi.git
+	branch = master
